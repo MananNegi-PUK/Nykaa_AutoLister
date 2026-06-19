@@ -151,7 +151,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     loadUploadHistory();
                     loadDashboard();
                 } else {
-                    alert(`Upload failed: ${data.detail}`);
+                    const errMsg = data.detail || data.message || data.error || JSON.stringify(data);
+                    alert(`Upload failed: ${errMsg}`);
                 }
             } catch (err) {
                 alert("Network error occurred during file upload.");
@@ -232,7 +233,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert(data.message);
                 loadDashboard();
             } else {
-                alert(`Learning failed: ${data.detail}`);
+                const errMsg = data.detail || data.message || data.error || JSON.stringify(data);
+                alert(`Learning failed: ${errMsg}`);
             }
         } catch (err) {
             alert("Network error occurred during learning trigger.");
@@ -348,7 +350,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Poll status
                 pollJobStatus(data.job_id);
             } else {
-                alert(`Error starting run: ${data.detail}`);
+                const errMsg = data.detail || data.message || data.error || JSON.stringify(data);
+                alert(`Error starting run: ${errMsg}`);
                 resetGeneratorBtn();
             }
         } catch (err) {

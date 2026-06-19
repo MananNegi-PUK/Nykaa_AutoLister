@@ -79,6 +79,13 @@ class ProcessingJob(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     output_file = relationship("DbFile")
+class DbErrorLog(Base):
+    __tablename__ = "db_error_logs"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    endpoint = Column(String(255), nullable=True)
+    error_message = Column(Text, nullable=False)
+    stack_trace = Column(Text, nullable=True)
 
 def init_db():
     Base.metadata.create_all(bind=engine)

@@ -13,9 +13,12 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import database
-from database import init_db, get_db, DbFile, CategoryConfig, SizeMapping, ProcessingJob, Setting
+from database import init_db, get_db, DbFile, CategoryConfig, SizeMapping, ProcessingJob, Setting, DbErrorLog
 import mapping_engine
 from mapping_engine import EngineLogger, learn_from_historical_excel, generate_nykaa_template
+from fastapi import Request
+from fastapi.responses import JSONResponse
+import traceback
 
 # Initialize FastAPI App
 app = FastAPI(title="Nykaa Auto Lister Pro")
@@ -28,6 +31,31 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    error_msg = str(exc)
+    stack_trace = traceback.format_exc()
+    
+    print(f"ERROR: {error_msg}\n{stack_trace}")
+    
+    try:
+        db = next(get_db())
+        log_entry = DbErrorLog(
+            endpoint=str(request.url),
+            error_message=error_msg,
+            stack_trace=stack_trace
+        )
+        db.add(log_entry)
+        db.commit()
+    except Exception as db_err:
+        print(f"Failed to log error to DB: {db_err}")
+        
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal Server Error: {error_msg}"}
+    )
+
 
 # Server-Sent Events log queue
 global_log_listeners = []
