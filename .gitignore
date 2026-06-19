@@ -1,0 +1,13 @@
+*.db
+*.db-wal
+*.db-shm
+__pycache__/
+.pytest_cache/
+*.log
+
+# Temporary excel files
+~$*
+
+# Large inventory/data sheets (uploaded via Web UI)
+Raw Files/Content Sheet.xlsx
+Raw Files/ITEM DIRECTORY Main.xlsx

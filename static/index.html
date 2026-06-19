@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nykaa Auto Lister Pro</title>
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons (Premium Feather alternative) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand-header">
+                <div class="brand-logo">
+                    <span class="logo-nykaa">nykaa</span>
+                    <span class="logo-sub">fashion</span>
+                </div>
+                <div class="brand-badge">Auto Lister Pro</div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-item active" data-tab="dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#upload" class="nav-item" data-tab="upload">
+                    <i data-lucide="upload-cloud"></i>
+                    <span>Upload Center</span>
+                </a>
+                <a href="#generator" class="nav-item" data-tab="generator">
+                    <i data-lucide="play-circle"></i>
+                    <span>Listing Generator</span>
+                </a>
+
+                <a href="#learning" class="nav-item" data-tab="learning">
+                    <i data-lucide="brain"></i>
+                    <span>AI Learning Center</span>
+                </a>
+                <a href="#validation" class="nav-item" data-tab="validation">
+                    <i data-lucide="check-square"></i>
+                    <span>Validation Center</span>
+                </a>
+                <a href="#settings" class="nav-item" data-tab="settings">
+                    <i data-lucide="settings"></i>
+                    <span>Settings & Admin</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="db-status">
+                    <span class="status-indicator online"></span>
+                    <span class="status-text">Cloud DB Connected</span>
+                </div>
+                <div class="version">v2.1.0-prod</div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="workspace-header">
+                <div class="header-left">
+                    <h1 id="page-title">Dashboard Overview</h1>
+                    <p id="page-description">Real-time status of your Nykaa Fashion catalog pipelines.</p>
+                </div>
+                <div class="header-right">
+                    <div class="active-files-summary">
+                        <div class="summary-pill">
+                            <span class="pill-label">Item Directory:</span>
+                            <span class="pill-value" id="summary-active-directory">None</span>
+                        </div>
+                        <div class="summary-pill">
+                            <span class="pill-label">Content Sheet:</span>
+                            <span class="pill-value" id="summary-active-content">None</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- TAB 1: DASHBOARD -->
+            <section id="tab-dashboard" class="tab-pane active">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-icon pink-bg"><i data-lucide="file-spreadsheet"></i></div>
+                        <div class="metric-details">
+                            <span class="metric-title">Master Item Directory</span>
+                            <h3 class="metric-value" id="metric-directory-name">None Loaded</h3>
+                            <span class="metric-sub" id="metric-directory-time">No active upload</span>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon purple-bg"><i data-lucide="file-text"></i></div>
+                        <div class="metric-details">
+                            <span class="metric-title">Catalog Content Sheet</span>
+                            <h3 class="metric-value" id="metric-content-name">None Loaded</h3>
+                            <span class="metric-sub" id="metric-content-time">No active upload</span>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon blue-bg"><i data-lucide="grid"></i></div>
+                        <div class="metric-details">
+                            <span class="metric-title">Active Category Templates</span>
+                            <h3 class="metric-value" id="metric-templates-count">0 Templates</h3>
+                            <span class="metric-sub">Learned and ready</span>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon green-bg"><i data-lucide="check-circle"></i></div>
+                        <div class="metric-details">
+                            <span class="metric-title">Total SKUs Generated</span>
+                            <h3 class="metric-value" id="metric-skus-count">0 SKUs</h3>
+                            <span class="metric-sub">Exported to Nykaa sheets</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Jobs Section -->
+                <div class="section-card">
+                    <div class="card-header">
+                        <h2>Recent Listing Runs</h2>
+                        <span class="card-sub text-muted">History of upload templates generated.</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Job ID</th>
+                                    <th>Category</th>
+                                    <th>Target Codes</th>
+                                    <th>Status</th>
+                                    <th>Result File</th>
+                                    <th>Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-jobs-body">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">No jobs run yet. Go to the Listing Generator to start.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: UPLOAD CENTER -->
+            <section id="tab-upload" class="tab-pane">
+                <div class="upload-layout-container">
+                    <div class="upload-header-intro">
+                        <p class="text-muted">Upload raw item directories, content sheets, templates or historical uploads. The latest uploaded file of each type is automatically used by the system.</p>
+                    </div>
+
+                    <!-- Grid of 4 Upload Boxes -->
+                    <div class="upload-boxes-grid mt-3">
+                        <!-- Box 1: Item Directory -->
+                        <div class="section-card upload-box-card" id="box-card-item_directory">
+                            <div class="upload-box-header">
+                                <span class="box-icon pink-text"><i data-lucide="folder-open"></i></span>
+                                <div>
+                                    <h3>Item Directory</h3>
+                                    <span class="box-subtitle">Master Inventory Sheet</span>
+                                </div>
+                            </div>
+                            <form class="compact-upload-form" data-type="item_directory">
+                                <div class="compact-drop-zone" id="drop-zone-item_directory">
+                                    <i data-lucide="upload-cloud" class="compact-drop-icon"></i>
+                                    <span class="compact-drop-text">Drag file or <span>browse</span></span>
+                                    <input type="file" id="input-item_directory" class="compact-file-input" style="display: none;" required>
+                                </div>
+                                <div class="compact-selected-file" id="selected-item_directory" style="display: none;">
+                                    <i data-lucide="file-spreadsheet" class="text-pink"></i>
+                                    <span class="compact-filename" id="name-item_directory"></span>
+                                    <button type="button" class="compact-clear-btn" id="clear-item_directory"><i data-lucide="x"></i></button>
+                                </div>
+                                <button type="submit" class="btn btn-pink w-100 mt-3" id="btn-submit-item_directory">
+                                    <i data-lucide="upload"></i> Upload
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Box 2: Content Sheet -->
+                        <div class="section-card upload-box-card" id="box-card-content_sheet">
+                            <div class="upload-box-header">
+                                <span class="box-icon purple-text"><i data-lucide="file-text"></i></span>
+                                <div>
+                                    <h3>Content Sheet</h3>
+                                    <span class="box-subtitle">Nykaa Titles & Descriptions</span>
+                                </div>
+                            </div>
+                            <form class="compact-upload-form" data-type="content_sheet">
+                                <div class="compact-drop-zone" id="drop-zone-content_sheet">
+                                    <i data-lucide="upload-cloud" class="compact-drop-icon"></i>
+                                    <span class="compact-drop-text">Drag file or <span>browse</span></span>
+                                    <input type="file" id="input-content_sheet" class="compact-file-input" style="display: none;" required>
+                                </div>
+                                <div class="compact-selected-file" id="selected-content_sheet" style="display: none;">
+                                    <i data-lucide="file-spreadsheet" class="text-pink"></i>
+                                    <span class="compact-filename" id="name-content_sheet"></span>
+                                    <button type="button" class="compact-clear-btn" id="clear-content_sheet"><i data-lucide="x"></i></button>
+                                </div>
+                                <button type="submit" class="btn btn-pink w-100 mt-3" id="btn-submit-content_sheet">
+                                    <i data-lucide="upload"></i> Upload
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Box 3: Category Template -->
+                        <div class="section-card upload-box-card" id="box-card-category_template">
+                            <div class="upload-box-header">
+                                <span class="box-icon blue-text"><i data-lucide="layout-grid"></i></span>
+                                <div>
+                                    <h3>Category Template</h3>
+                                    <span class="box-subtitle">Nykaa Excel Template</span>
+                                </div>
+                            </div>
+                            <form class="compact-upload-form" data-type="category_template">
+                                <div class="compact-drop-zone" id="drop-zone-category_template">
+                                    <i data-lucide="upload-cloud" class="compact-drop-icon"></i>
+                                    <span class="compact-drop-text">Drag file or <span>browse</span></span>
+                                    <input type="file" id="input-category_template" class="compact-file-input" style="display: none;" required>
+                                </div>
+                                <div class="compact-selected-file" id="selected-category_template" style="display: none;">
+                                    <i data-lucide="file-spreadsheet" class="text-pink"></i>
+                                    <span class="compact-filename" id="name-category_template"></span>
+                                    <button type="button" class="compact-clear-btn" id="clear-category_template"><i data-lucide="x"></i></button>
+                                </div>
+                                <button type="submit" class="btn btn-pink w-100 mt-3" id="btn-submit-category_template">
+                                    <i data-lucide="upload"></i> Upload
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Box 4: Historical Listing -->
+                        <div class="section-card upload-box-card" id="box-card-historical_listing">
+                            <div class="upload-box-header">
+                                <span class="box-icon green-text"><i data-lucide="history"></i></span>
+                                <div>
+                                    <h3>Historical Listing</h3>
+                                    <span class="box-subtitle">Populated Sheet (For Learning)</span>
+                                </div>
+                            </div>
+                            <form class="compact-upload-form" data-type="historical_listing">
+                                <div class="compact-drop-zone" id="drop-zone-historical_listing">
+                                    <i data-lucide="upload-cloud" class="compact-drop-icon"></i>
+                                    <span class="compact-drop-text">Drag file or <span>browse</span></span>
+                                    <input type="file" id="input-historical_listing" class="compact-file-input" style="display: none;" required>
+                                </div>
+                                <div class="compact-selected-file" id="selected-historical_listing" style="display: none;">
+                                    <i data-lucide="file-spreadsheet" class="text-pink"></i>
+                                    <span class="compact-filename" id="name-historical_listing"></span>
+                                    <button type="button" class="compact-clear-btn" id="clear-historical_listing"><i data-lucide="x"></i></button>
+                                </div>
+                                <button type="submit" class="btn btn-pink w-100 mt-3" id="btn-submit-historical_listing">
+                                    <i data-lucide="upload"></i> Upload
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Upload History -->
+                    <div class="section-card upload-history-card mt-4">
+                        <h2>File Management & History</h2>
+                        <p class="text-muted">Analyze configuration from template/historical files or delete records.</p>
+                        
+                        <div class="table-responsive mt-4">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Filename</th>
+                                        <th>Type</th>
+                                        <th>Uploaded At</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="file-history-body">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">No files uploaded.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: LISTING GENERATOR -->
+            <section id="tab-generator" class="tab-pane">
+                <div class="generator-grid">
+                    <!-- Generation Form -->
+                    <div class="section-card">
+                        <h2>Auto-List Generator</h2>
+                        <p class="text-muted">Fill a Nykaa template instantly based on Item Colors.</p>
+                        
+                        <form id="generator-form" class="mt-4">
+                            <div class="form-group mt-3">
+                                <label for="gen-input-codes">1. Enter Item Color Codes (one per line)</label>
+                                <textarea id="gen-input-codes" class="form-control font-mono" rows="6" placeholder="Example:&#10;PBPOHS002797-RED&#10;PBPOHS002797-YELLOW" required></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-pink w-100 mt-4" id="btn-run-generator">
+                                <i data-lucide="play"></i> Generate Nykaa Template
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Generation Progress & Output Console -->
+                    <div class="section-card console-card flex-col">
+                        <div class="console-header">
+                            <h2>Processing Terminal</h2>
+                            <div class="console-actions">
+                                <span class="console-badge" id="gen-progress-badge">Idle</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress bar -->
+                        <div class="progress-container">
+                            <div class="progress-bar" id="gen-progress-bar" style="width: 0%;">0%</div>
+                        </div>
+
+                        <!-- Real-time Console Log terminal -->
+                        <div class="terminal-body font-mono" id="log-terminal">
+                            <div class="log-line text-muted">[SYSTEM] Ready for automation. Select a category and input codes.</div>
+                        </div>
+
+                        <!-- Result Download -->
+                        <div class="result-download-box" id="result-download-box" style="display: none;">
+                            <div class="download-info">
+                                <i data-lucide="check-circle" class="text-success text-lg"></i>
+                                <div>
+                                    <h4 class="font-semibold" id="download-file-title">File generated successfully!</h4>
+                                    <span class="text-sm text-muted" id="download-file-meta">Click to download the sheet</span>
+                                </div>
+                            </div>
+                            <a href="#" class="btn btn-success" id="btn-download-output">
+                                <i data-lucide="download"></i> Download Sheet
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+
+            <!-- TAB 5: AI LEARNING CENTER -->
+            <section id="tab-learning" class="tab-pane">
+                <div class="learning-container">
+                    <div class="section-card">
+                        <h2>Continuous Learning Rules Base</h2>
+                        <p class="text-muted">Configure rule mappings learned from historical files.</p>
+                        
+                        <div class="form-group mt-3 w-50">
+                            <label for="learning-category-select">Select Category to View Mappings</label>
+                            <select id="learning-category-select" class="form-control">
+                                    <option value="">-- Choose Category --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="learning-grid mt-4">
+                        <!-- Column Mappings -->
+                        <div class="section-card">
+                            <h2>Column Mapping Layer</h2>
+                            <p class="text-muted">How Nykaa Columns link to Item Directory or Content Sheet columns.</p>
+                            <div class="table-responsive mt-3">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nykaa Template Column</th>
+                                            <th>Source Database Column</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="learning-mappings-body">
+                                        <tr>
+                                            <td colspan="2" class="text-center text-muted">Select a category above.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Hardcoded Column Defaults -->
+                        <div class="section-card">
+                            <h2>Hardcoded Column Defaults</h2>
+                            <p class="text-muted">Default category parameters applied to blank inputs.</p>
+                            <div class="table-responsive mt-3">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nykaa Column</th>
+                                            <th>Default Hardcoded Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="learning-hardcoded-body">
+                                        <tr>
+                                            <td colspan="2" class="text-center text-muted">Select a category above.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 6: VALIDATION CENTER -->
+            <section id="tab-validation" class="tab-pane">
+                <div class="validation-container">
+                    <div class="section-card">
+                        <h2>Pre-Listing Integrity Validation</h2>
+                        <p class="text-muted">Verify active database sheets integrity before building Nykaa uploads.</p>
+                        <button class="btn btn-pink mt-3" id="btn-run-validation">
+                            <i data-lucide="shield-alert"></i> Run System Diagnostics
+                        </button>
+                    </div>
+
+                    <div class="section-card mt-4" id="validation-report-card" style="display: none;">
+                        <h2>Validation Diagnostics Report</h2>
+                        <div class="validation-status-pill mt-3" id="validation-status-header">
+                            <!-- Populated by JS -->
+                        </div>
+                        
+                        <div class="validation-list mt-4" id="validation-report-list">
+                            <!-- List of issues -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 7: SETTINGS -->
+            <section id="tab-settings" class="tab-pane">
+                <div class="settings-grid">
+                    <div class="section-card">
+                        <h2>Database Connection Parameters</h2>
+                        <p class="text-muted">Modify PostgreSQL connection strings (restart server for changes to take effect).</p>
+                        
+                        <form id="settings-db-form" class="mt-4">
+                            <div class="form-group">
+                                <label for="settings-db-url">PostgreSQL DATABASE_URL</label>
+                                <input type="text" id="settings-db-url" class="form-control font-mono" placeholder="postgresql://postgres:postgres@localhost:5432/nykaa_autolister">
+                            </div>
+                            <button type="submit" class="btn btn-pink mt-4">Save Connection details</button>
+                        </form>
+                    </div>
+
+                    <div class="section-card">
+                        <h2>System Diagnostics & Reset</h2>
+                        <p class="text-muted">Perform database diagnostic tasks.</p>
+                        <div class="actions-row mt-4">
+                            <button class="btn btn-outline" id="btn-test-db-connection">
+                                <i data-lucide="refresh-cw"></i> Test Connection
+                            </button>
+                            <button class="btn btn-danger" id="btn-reset-db">
+                                <i data-lucide="trash-2"></i> Reset Database Tables
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="app.js?v=1"></script>
+</body>
+</html>
