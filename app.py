@@ -185,7 +185,7 @@ async def upload_file(
 ):
     try:
         content_bytes = await file.read()
-        content_b64 = base64.b64encode(content_bytes).decode("utf-8")
+        content_b64 = database.compress_and_encode(content_bytes)
         
         # Save to database
         db_file = DbFile(
@@ -515,7 +515,7 @@ def download_file(file_id: int, db: Session = Depends(get_db)):
     if not db_file:
         raise HTTPException(status_code=404, detail="File not found")
         
-    file_bytes = base64.b64decode(db_file.content_b64)
+    file_bytes = database.decode_and_decompress(db_file.content_b64)
     filename = db_file.filename
     file_type = db_file.file_type
     

@@ -1,7 +1,29 @@
 import os
+import zlib
+import base64
 from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, Text, Boolean, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+
+def compress_and_encode(data_bytes: bytes) -> str:
+    """Compress bytes using zlib and encode to base64 string."""
+    compressed = zlib.compress(data_bytes, level=9)
+    return base64.b64encode(compressed).decode("utf-8")
+
+def decode_and_decompress(b64_str: str) -> bytes:
+    """Decode base64 string and decompress using zlib. Falls back to raw bytes if not compressed."""
+    try:
+        raw_bytes = base64.b64decode(b64_str)
+        try:
+            return zlib.decompress(raw_bytes)
+        except zlib.error:
+            # If it is not compressed (old format), return the raw bytes directly
+            return raw_bytes
+    except Exception:
+        # Fallback in case base64 decode itself fails (should not happen for valid content)
+        if isinstance(b64_str, str):
+            return b64_str.encode("utf-8")
+        return b64_str
 
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()  # strip() removes any \n or spaces from env vars
 if DATABASE_URL:

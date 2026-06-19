@@ -3,12 +3,27 @@ import json
 import base64
 import io
 import re
+import zlib
 from datetime import datetime
 import pandas as pd
 import openpyxl
 from openpyxl.styles import Font, Alignment
 from sqlalchemy.orm import Session
 from database import DbFile, CategoryConfig, SizeMapping, ProcessingJob, Setting
+
+def decode_and_decompress(b64_str: str) -> bytes:
+    """Decode base64 string and decompress using zlib. Falls back to raw bytes if not compressed."""
+    try:
+        raw_bytes = base64.b64decode(b64_str)
+        try:
+            return zlib.decompress(raw_bytes)
+        except zlib.error:
+            # If it is not compressed (old format), return the raw bytes directly
+            return raw_bytes
+    except Exception:
+        if isinstance(b64_str, str):
+            return b64_str.encode("utf-8")
+        return b64_str
 
 class EngineLogger:
     def __init__(self, job_id=None, log_queue=None):
@@ -364,7 +379,7 @@ def clean_excel_value(val):
 def learn_from_historical_excel(db: Session, file_content_b64: str, filename: str, category_name: str, logger: EngineLogger):
     logger.log("info", f"Analyzing historical listing file '{filename}' for category '{category_name}'...")
     
-    file_data = base64.b64decode(file_content_b64)
+    file_data = decode_and_decompress(file_content_b64)
     wb = openpyxl.load_workbook(io.BytesIO(file_data), data_only=True)
     
     # 1. Identify product sheet
@@ -961,7 +976,7 @@ def generate_nykaa_template(db: Session, job: ProcessingJob, logger: EngineLogge
         raise ValueError("Template file missing in database.")
 
     # 3. Read template bytes from DB
-    template_bytes = base64.b64decode(template_file.content_b64)
+    template_bytes = decode_and_decompress(template_file.content_b64)
 
     # 4. Extract sheet name, column mapping, and dropdown options via openpyxl read-only (in-memory)
     logger.log("info", "Extracting sheet metadata, column mapping, and dropdown validation lists from template in-memory...")
@@ -971,12 +986,13 @@ def generate_nykaa_template(db: Session, job: ProcessingJob, logger: EngineLogge
 
     # 5. Load Item Directory & Content Sheet
     logger.log("info", "Loading Item Directory...")
-    item_bytes = base64.b64decode(item_dir_file.content_b64)
+    item_bytes = decode_and_decompress(item_dir_file.content_b64)
     item_df = pd.read_excel(io.BytesIO(item_bytes), sheet_name=0)
     logger.log("success", f"Loaded Item Directory: {len(item_df)} rows.")
 
+    # 6. Load Content Sheet
     logger.log("info", "Loading Content Sheet...")
-    content_bytes = base64.b64decode(content_sheet_file.content_b64)
+    content_bytes = decode_and_decompress(content_sheet_file.content_b64)
     content_xl = pd.ExcelFile(io.BytesIO(content_bytes))
     content_sheet_name = "MarketplaceD2C" if "MarketplaceD2C" in content_xl.sheet_names else content_xl.sheet_names[0]
     content_df = pd.read_excel(io.BytesIO(content_bytes), sheet_name=content_sheet_name)
@@ -1194,7 +1210,7 @@ def generate_nykaa_template(db: Session, job: ProcessingJob, logger: EngineLogge
 
     timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_filename = f"Nykaa_Populated_{target_sheet_name}_{timestamp_str}.xlsm"
-    out_b64 = base64.b64encode(final_bytes).decode("utf-8")
+    out_b64 = base64.b64encode(zlib.compress(final_bytes, level=9)).decode("utf-8")
 
     out_db_file = DbFile(
         file_type="output_file",
