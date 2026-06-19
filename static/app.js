@@ -13,8 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         upload: { title: "Upload Center", desc: "Upload and manage directories, content sheets, and category templates." },
         generator: { title: "Listing Generator", desc: "Instantly create upload-ready sheets from style color codes." },
         learning: { title: "AI Learning Center", desc: "View learned column properties and defaults." },
-        validation: { title: "Validation Center", desc: "Run integrity diagnostics on active sheets." },
-        settings: { title: "Settings & Administration", desc: "Modify system configuration and database parameters." }
+        validation: { title: "Validation Center", desc: "Run integrity diagnostics on active sheets." }
     };
 
     navItems.forEach(item => {
@@ -42,7 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (tabId === 'dashboard') loadDashboard();
             if (tabId === 'upload') loadUploadHistory();
             if (tabId === 'learning') loadLearningDropdowns();
-            if (tabId === 'settings') loadSettings();
         });
     });
 
@@ -556,45 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Settings
-    async function loadSettings() {
-        try {
-            const res = await fetch('/api/settings');
-            const data = await res.json();
-            document.getElementById('settings-db-url').value = data.DATABASE_URL || '';
-        } catch (err) {
-            console.error(err);
-        }
-    }
 
-    const settingsForm = document.getElementById('settings-db-form');
-    settingsForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const url = document.getElementById('settings-db-url').value;
-
-        try {
-            const res = await fetch('/api/settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ DATABASE_URL: url })
-            });
-            if (res.ok) {
-                alert("Database connection parameters saved successfully! Please restart the backend server.");
-            }
-        } catch (err) {
-            alert("Failed to save settings.");
-        }
-    });
-
-    document.getElementById('btn-test-db-connection').addEventListener('click', async () => {
-        alert("Diagnostics test: Connection parameters validated. Active sessions healthy.");
-    });
-
-    document.getElementById('btn-reset-db').addEventListener('click', async () => {
-        if (confirm("Are you sure you want to drop all database tables? This will wipe upload history, categories, rules mappings, and size charts!")) {
-            alert("Database resetting is restricted to administrator direct commands.");
-        }
-    });
 
     // Initial Load
     loadDashboard();

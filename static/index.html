@@ -46,10 +46,6 @@
                     <i data-lucide="check-square"></i>
                     <span>Validation Center</span>
                 </a>
-                <a href="#settings" class="nav-item" data-tab="settings">
-                    <i data-lucide="settings"></i>
-                    <span>Settings & Admin</span>
-                </a>
             </nav>
 
             <div class="sidebar-footer">
@@ -427,37 +423,6 @@
                         
                         <div class="validation-list mt-4" id="validation-report-list">
                             <!-- List of issues -->
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- TAB 7: SETTINGS -->
-            <section id="tab-settings" class="tab-pane">
-                <div class="settings-grid">
-                    <div class="section-card">
-                        <h2>Database Connection Parameters</h2>
-                        <p class="text-muted">Modify PostgreSQL connection strings (restart server for changes to take effect).</p>
-                        
-                        <form id="settings-db-form" class="mt-4">
-                            <div class="form-group">
-                                <label for="settings-db-url">PostgreSQL DATABASE_URL</label>
-                                <input type="text" id="settings-db-url" class="form-control font-mono" placeholder="postgresql://postgres:postgres@localhost:5432/nykaa_autolister">
-                            </div>
-                            <button type="submit" class="btn btn-pink mt-4">Save Connection details</button>
-                        </form>
-                    </div>
-
-                    <div class="section-card">
-                        <h2>System Diagnostics & Reset</h2>
-                        <p class="text-muted">Perform database diagnostic tasks.</p>
-                        <div class="actions-row mt-4">
-                            <button class="btn btn-outline" id="btn-test-db-connection">
-                                <i data-lucide="refresh-cw"></i> Test Connection
-                            </button>
-                            <button class="btn btn-danger" id="btn-reset-db">
-                                <i data-lucide="trash-2"></i> Reset Database Tables
-                            </button>
                         </div>
                     </div>
                 </div>

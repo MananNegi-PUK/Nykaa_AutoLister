@@ -488,20 +488,28 @@ def download_file(file_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="File not found")
         
     file_bytes = base64.b64decode(db_file.content_b64)
+    filename = db_file.filename
+    file_type = db_file.file_type
+    
+    # If this is a generated output file, delete it from the database immediately to save space
+    if file_type == "output_file":
+        db.delete(db_file)
+        db.commit()
+        
     stream = io.BytesIO(file_bytes)
     
     # Return streaming download response
     headers = {
-        'Content-Disposition': f'attachment; filename="{db_file.filename}"'
+        'Content-Disposition': f'attachment; filename="{filename}"'
     }
     
     # Resolve MIME type
     media_type = "application/octet-stream"
-    if db_file.filename.endswith(".xlsx"):
+    if filename.endswith(".xlsx"):
         media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    elif db_file.filename.endswith(".xlsm"):
+    elif filename.endswith(".xlsm"):
         media_type = "application/vnd.ms-excel.sheet.macroEnabled.12"
-    elif db_file.filename.endswith(".csv"):
+    elif filename.endswith(".csv"):
         media_type = "text/csv"
         
     return StreamingResponse(stream, media_type=media_type, headers=headers)
