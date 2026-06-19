@@ -112,6 +112,15 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedName.textContent = file.name;
             selectedDisplay.style.display = 'flex';
             dropZone.style.display = 'none';
+            // Auto submit form to trigger instant upload
+            setTimeout(() => {
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                } else {
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) submitBtn.click();
+                }
+            }, 50);
         }
         
         clearBtn.addEventListener('click', (e) => {
@@ -170,6 +179,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch('/api/files');
             const files = await res.json();
+            
+            if (!Array.isArray(files)) {
+                const errMsg = files.detail || files.message || files.error || 'Server error';
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Failed to load upload history: ${errMsg}</td></tr>`;
+                return;
+            }
             
             if (files.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No files uploaded yet.</td></tr>`;
@@ -247,6 +262,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch('/api/files');
             const files = await res.json();
             
+            if (!Array.isArray(files)) {
+                console.error("Failed to load dashboard active files:", files);
+                return;
+            }
+            
             const activeDir = files.find(f => f.file_type === 'item_directory' && f.is_latest);
             const activeContent = files.find(f => f.file_type === 'content_sheet' && f.is_latest);
 
@@ -281,6 +301,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch('/api/files');
             const files = await res.json();
+            
+            if (!Array.isArray(files)) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">Failed to load recent jobs: ${files.detail || files.message || 'Server error'}</td></tr>`;
+                return;
+            }
+            
             const outputFiles = files.filter(f => f.file_type === 'output_file');
             
             if (outputFiles.length === 0) {
@@ -487,6 +513,15 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const filesRes = await fetch('/api/files');
             const files = await filesRes.json();
+
+            if (!Array.isArray(files)) {
+                const errMsg = files.detail || files.message || files.error || 'Server error';
+                alert(`Validation failed: Failed to fetch files: ${errMsg}`);
+                btnValidation.disabled = false;
+                btnValidation.innerHTML = `<i data-lucide="shield-alert"></i> Run System Diagnostics`;
+                lucide.createIcons();
+                return;
+            }
 
             const activeDir = files.find(f => f.file_type === 'item_directory' && f.is_latest);
             const activeContent = files.find(f => f.file_type === 'content_sheet' && f.is_latest);

@@ -176,11 +176,46 @@ def get_logs_stream():
                 
     return StreamingResponse(sse_event_generator(), media_type="text/event-stream")
 
+def run_bg_learning(file_id: int, file_type: str, filename: str, content_bytes: bytes, content_b64: str):
+    db = database.SessionLocal()
+    try:
+        import openpyxl
+        wb = openpyxl.load_workbook(io.BytesIO(content_bytes), read_only=True)
+        category = None
+        for sname in wb.sheetnames:
+            if sname not in ["Instructions Sheet", "Instructions", "mastersheet", "masterdata"]:
+                category = sname.strip()
+                break
+        wb.close()
+        
+        if category:
+            # Link configuration
+            config = db.query(CategoryConfig).filter(CategoryConfig.category_name == category).first()
+            if not config:
+                config = CategoryConfig(category_name=category)
+                db.add(config)
+                
+            db_file = db.query(DbFile).filter(DbFile.id == file_id).first()
+            if db_file and file_type == "category_template":
+                config.template_file_id = db_file.id
+                
+            db.commit()
+            
+            # Auto-run learn from this sheet
+            q = queue.Queue()
+            logger = EngineLogger(job_id="learning-auto", log_queue=q)
+            learn_from_historical_excel(db, content_b64, filename, category, logger)
+    except Exception as e:
+        print(f"Background auto-learning failed: {e}")
+    finally:
+        db.close()
+
 # Upload files to database storage
 @app.post("/api/upload")
 async def upload_file(
     file_type: str = Form(...),
     file: UploadFile = File(...),
+    background_tasks: BackgroundTasks = None,
     db: Session = Depends(get_db)
 ):
     try:
@@ -197,39 +232,16 @@ async def upload_file(
         db.add(db_file)
         db.commit()
 
-        # Auto-configure category based on the sheets inside the template/historical file
-        if file_type in ["category_template", "historical_listing"]:
-            try:
-                import openpyxl
-                wb = openpyxl.load_workbook(io.BytesIO(content_bytes), read_only=True)
-                category = None
-                for sname in wb.sheetnames:
-                    if sname not in ["Instructions Sheet", "Instructions", "mastersheet", "masterdata"]:
-                        category = sname.strip()
-                        break
-                wb.close()
-                
-                if category:
-                    # Link configuration
-                    config = db.query(CategoryConfig).filter(CategoryConfig.category_name == category).first()
-                    if not config:
-                        config = CategoryConfig(category_name=category)
-                        db.add(config)
-                        
-                    if file_type == "category_template":
-                        config.template_file_id = db_file.id
-                        
-                    db.commit()
-                    
-                    # Auto-run learn from this sheet
-                    q = queue.Queue()
-                    logger = EngineLogger(job_id="learning-auto", log_queue=q)
-                    try:
-                        learn_from_historical_excel(db, content_b64, file.filename, category, logger)
-                    except Exception as learn_err:
-                        print(f"Auto-learning warning: {str(learn_err)}")
-            except Exception as excel_err:
-                print(f"Failed to auto-parse uploaded excel: {str(excel_err)}")
+        # Run heavy auto-parsing and learning asynchronously in the background
+        if file_type in ["category_template", "historical_listing"] and background_tasks:
+            background_tasks.add_task(
+                run_bg_learning,
+                db_file.id,
+                file_type,
+                file.filename,
+                content_bytes,
+                content_b64
+            )
 
         return {"id": db_file.id, "filename": db_file.filename, "file_type": db_file.file_type}
     except Exception as e:
