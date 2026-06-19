@@ -56,6 +56,71 @@ class SSELogger:
 def startup_event():
     init_db()
     print("Database tables initialized successfully.")
+    
+    # Auto-migrate dump file if it exists
+    dump_path = "migration_dump.json"
+    if os.path.exists(dump_path):
+        print("Found migration_dump.json. Checking if database import is needed...")
+        try:
+            with open(dump_path, "r") as f:
+                data = json.load(f)
+                
+            db = database.SessionLocal()
+            
+            # Check if we have configs already
+            existing_configs_count = db.query(CategoryConfig).count()
+            if existing_configs_count == 0:
+                print("Database is empty. Importing dump data...")
+                
+                # 1. Import db_files
+                file_id_map = {}
+                for f_data in data.get("db_files", []):
+                    # Check if filename already exists
+                    exists = db.query(DbFile).filter(DbFile.filename == f_data["filename"], DbFile.file_type == f_data["file_type"]).first()
+                    if not exists:
+                        db_file = DbFile(
+                            file_type=f_data["file_type"],
+                            filename=f_data["filename"],
+                            content_b64=f_data["content_b64"],
+                            is_active=f_data.get("is_active", False)
+                        )
+                        if f_data.get("uploaded_at"):
+                            db_file.uploaded_at = datetime.fromisoformat(f_data["uploaded_at"])
+                        db.add(db_file)
+                        db.flush()
+                        file_id_map[f_data["id"]] = db_file.id
+                    else:
+                        file_id_map[f_data["id"]] = exists.id
+                        
+                db.commit()
+                
+                # 2. Import category_configs
+                for c_data in data.get("category_configs", []):
+                    new_template_id = file_id_map.get(c_data["template_file_id"]) if c_data.get("template_file_id") else None
+                    new_config = CategoryConfig(
+                        category_name=c_data["category_name"],
+                        template_file_id=new_template_id,
+                        hardcoded_values=c_data["hardcoded_values"],
+                        column_mappings=c_data["column_mappings"]
+                    )
+                    db.add(new_config)
+                    
+                # 3. Import size_mappings
+                for s_data in data.get("size_mappings", []):
+                    new_size = SizeMapping(
+                        category_name=s_data["category_name"],
+                        brand_size=s_data["brand_size"],
+                        measurements=s_data["measurements"]
+                    )
+                    db.add(new_size)
+                    
+                db.commit()
+                print("Successfully imported configurations and size chart data on startup!")
+            else:
+                print("Database already contains data. Skipping auto-import.")
+            db.close()
+        except Exception as import_err:
+            print(f"Failed to auto-import migration dump: {str(import_err)}")
 
 # SSE logs stream connection endpoint
 @app.get("/api/logs")
