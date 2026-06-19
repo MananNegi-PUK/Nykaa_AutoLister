@@ -7,6 +7,14 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if DATABASE_URL:
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    
+    # Auto-rewrite direct Supabase IPv6 hosts to IPv4 connection pooler to prevent "Network is unreachable"
+    if "@db.iuvdyogawvuorvnzuaxc.supabase.co" in DATABASE_URL:
+        # Swap direct hostname with the verified pooler hostname
+        DATABASE_URL = DATABASE_URL.replace("@db.iuvdyogawvuorvnzuaxc.supabase.co", "@aws-1-ap-northeast-1.pooler.supabase.com", 1)
+        # Update username format for the pooler: postgres -> postgres.iuvdyogawvuorvnzuaxc
+        if "postgresql://postgres:" in DATABASE_URL:
+            DATABASE_URL = DATABASE_URL.replace("postgresql://postgres:", "postgresql://postgres.iuvdyogawvuorvnzuaxc:", 1)
 else:
     # Fallback to SQLite for easy local testing when no cloud PostgreSQL is configured
     DATABASE_URL = "sqlite:///nykaa_autolister.db"
