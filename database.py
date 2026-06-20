@@ -141,10 +141,24 @@ class DbErrorLog(Base):
     error_message = Column(Text, nullable=False)
     stack_trace = Column(Text, nullable=True)
 
+db_connection_error = None
+
 def init_db():
-    Base.metadata.create_all(bind=engine)
+    global db_connection_error
+    try:
+        Base.metadata.create_all(bind=engine)
+        db_connection_error = None
+    except Exception as e:
+        db_connection_error = str(e)
+        raise e
 
 def get_db():
+    if db_connection_error:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database connection failed: {db_connection_error}. Please ensure your Supabase project is active/resumed, database credentials in DATABASE_URL are correct, and 0.0.0.0 IP access is allowed in Supabase settings."
+        )
     db = SessionLocal()
     try:
         yield db

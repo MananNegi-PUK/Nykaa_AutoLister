@@ -82,8 +82,13 @@ class SSELogger:
 # Database Initialization on Startup
 @app.on_event("startup")
 def startup_event():
-    init_db()
-    print("Database tables initialized successfully.")
+    try:
+        init_db()
+        print("Database tables initialized successfully.")
+    except Exception as db_err:
+        print(f"DATABASE INITIALIZATION FAILED: {db_err}")
+        print("FastAPI server will continue to boot to serve diagnostic connection errors.")
+        return  # Skip dump loading and initialize server cleanly so user receives errors instead of a 502 Bad Gateway
     
     # Auto-migrate dump file if it exists
     dump_path = "migration_dump.json"
