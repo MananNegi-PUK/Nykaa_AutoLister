@@ -73,19 +73,29 @@ if DATABASE_URL:
     
     # 2. Auto-rewrite direct Supabase IPv6 hosts to IPv4 connection pooler to prevent "Network is unreachable"
     if "supabase.co" in DATABASE_URL or "pooler.supabase.com" in DATABASE_URL:
-        # Swap direct hostname with the verified pooler hostname
-        if "db.iuvdyogawvuorvnzuaxc.supabase.co" in DATABASE_URL:
-            DATABASE_URL = DATABASE_URL.replace("db.iuvdyogawvuorvnzuaxc.supabase.co", "aws-1-ap-northeast-1.pooler.supabase.com", 1)
-        
-        # Ensure we connect via port 6543 (transaction pooler) instead of 5432 (direct/IPv6-only)
-        if ":5432" in DATABASE_URL:
-            DATABASE_URL = DATABASE_URL.replace(":5432", ":6543", 1)
-        elif "pooler.supabase.com/postgres" in DATABASE_URL:
-            DATABASE_URL = DATABASE_URL.replace("pooler.supabase.com/postgres", "pooler.supabase.com:6543/postgres", 1)
+        import re
+        # Dynamically extract the Supabase project reference ID from the host
+        match = re.search(r"@db\.([a-z0-9]+)\.supabase\.co", DATABASE_URL)
+        if match:
+            project_id = match.group(1)
+            # Rewrite direct hostname to the verified Tokyo pooler hostname
+            DATABASE_URL = DATABASE_URL.replace(f"db.{project_id}.supabase.co", "aws-1-ap-northeast-1.pooler.supabase.com", 1)
             
-        # Ensure username format contains project reference suffix for pooler validation
-        if "postgresql://postgres:" in DATABASE_URL:
-            DATABASE_URL = DATABASE_URL.replace("postgresql://postgres:", "postgresql://postgres.iuvdyogawvuorvnzuaxc:", 1)
+            # Re-route port to transaction pooler port 6543
+            if ":5432" in DATABASE_URL:
+                DATABASE_URL = DATABASE_URL.replace(":5432", ":6543", 1)
+            elif "pooler.supabase.com/postgres" in DATABASE_URL:
+                DATABASE_URL = DATABASE_URL.replace("pooler.supabase.com/postgres", "pooler.supabase.com:6543/postgres", 1)
+                
+            # Ensure the username contains the project suffix for routing
+            if "postgresql://postgres:" in DATABASE_URL:
+                DATABASE_URL = DATABASE_URL.replace("postgresql://postgres:", f"postgresql://postgres.{project_id}:", 1)
+        elif "pooler.supabase.com" in DATABASE_URL:
+            # Fallback cleanup for direct pooler URLs
+            if ":5432" in DATABASE_URL:
+                DATABASE_URL = DATABASE_URL.replace(":5432", ":6543", 1)
+            elif "pooler.supabase.com/postgres" in DATABASE_URL:
+                DATABASE_URL = DATABASE_URL.replace("pooler.supabase.com/postgres", "pooler.supabase.com:6543/postgres", 1)
 else:
     # Fallback to SQLite for easy local testing when no cloud PostgreSQL is configured
     DATABASE_URL = "sqlite:///nykaa_autolister.db"
