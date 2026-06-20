@@ -212,14 +212,14 @@ def run_bg_learning(file_id: int, file_type: str, filename: str, content_bytes: 
 
 # Upload files to database storage
 @app.post("/api/upload")
-async def upload_file(
+def upload_file(
     file_type: str = Form(...),
     file: UploadFile = File(...),
     background_tasks: BackgroundTasks = None,
     db: Session = Depends(get_db)
 ):
     try:
-        content_bytes = await file.read()
+        content_bytes = file.file.read()
         content_b64 = database.compress_and_encode(content_bytes)
         
         # Save to database
@@ -357,13 +357,13 @@ def update_category(
 
 # Upload size chart Excel mappings
 @app.post("/api/sizecharts/upload-excel")
-async def upload_sizechart_excel(
+def upload_sizechart_excel(
     category: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
     try:
-        content_bytes = await file.read()
+        content_bytes = file.file.read()
         df = pd.read_excel(io.BytesIO(content_bytes))
         
         # The Excel sheet should contain columns:

@@ -76,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedName = document.getElementById(`name-${type}`);
         const clearBtn = document.getElementById(`clear-${type}`);
         const form = document.querySelector(`form[data-type="${type}"]`);
+        const statusDiv = document.getElementById(`status-${type}`);
         
         if (!dropZone || !fileInput || !selectedDisplay || !selectedName || !clearBtn || !form) return;
         
@@ -108,42 +109,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        function handleSelectedFile(file) {
+        async function handleSelectedFile(file) {
+            if (!file) return;
+            
             selectedName.textContent = file.name;
             selectedDisplay.style.display = 'flex';
             dropZone.style.display = 'none';
-            // Auto submit form to trigger instant upload
-            setTimeout(() => {
-                if (typeof form.requestSubmit === 'function') {
-                    form.requestSubmit();
-                } else {
-                    const submitBtn = form.querySelector('button[type="submit"]');
-                    if (submitBtn) submitBtn.click();
-                }
-            }, 50);
-        }
-        
-        clearBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            fileInput.value = '';
-            selectedDisplay.style.display = 'none';
-            dropZone.style.display = 'flex';
-        });
-        
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const file = fileInput.files[0];
-            if (!file) return;
+            clearBtn.style.display = 'none'; // Hide clear button during upload
+            
+            if (statusDiv) {
+                statusDiv.style.display = 'block';
+                statusDiv.innerHTML = `
+                    <div class="flex items-center gap-2 text-sm font-medium text-pink mt-3" style="display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="refresh-cw" class="animate-spin" style="width: 16px; height: 16px; min-width: 16px; stroke-width: 2.5px;"></i>
+                        <span>Uploading, please wait...</span>
+                    </div>
+                `;
+                lucide.createIcons();
+            }
             
             const formData = new FormData();
             formData.append('file_type', type);
             formData.append('file', file);
-            
-            const btn = document.getElementById(`btn-submit-${type}`);
-            btn.disabled = true;
-            const origHtml = btn.innerHTML;
-            btn.innerHTML = `<i data-lucide="refresh-cw" class="animate-spin"></i> Uploading...`;
-            lucide.createIcons();
             
             try {
                 const res = await fetch('/api/upload', {
@@ -151,25 +138,60 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: formData
                 });
                 const data = await res.json();
+                
                 if (res.ok) {
-                    alert(`Successfully uploaded file: ${data.filename}`);
-                    // Clear selection
-                    fileInput.value = '';
-                    selectedDisplay.style.display = 'none';
-                    dropZone.style.display = 'flex';
-                    loadUploadHistory();
-                    loadDashboard();
+                    if (statusDiv) {
+                        statusDiv.innerHTML = `
+                            <div class="flex items-center gap-2 text-sm font-medium text-success mt-3" style="display: flex; align-items: center; gap: 8px; color: #10B981;">
+                                <i data-lucide="check-circle" style="width: 16px; height: 16px; min-width: 16px; stroke-width: 2.5px;"></i>
+                                <span>Uploaded successfully!</span>
+                            </div>
+                        `;
+                        lucide.createIcons();
+                    }
+                    
+                    // Reset selection after a short delay
+                    setTimeout(() => {
+                        fileInput.value = '';
+                        selectedDisplay.style.display = 'none';
+                        dropZone.style.display = 'flex';
+                        if (statusDiv) statusDiv.style.display = 'none';
+                        loadUploadHistory();
+                        loadDashboard();
+                    }, 1800);
                 } else {
                     const errMsg = data.detail || data.message || data.error || JSON.stringify(data);
-                    alert(`Upload failed: ${errMsg}`);
+                    if (statusDiv) {
+                        statusDiv.innerHTML = `
+                            <div class="flex items-center gap-2 text-sm font-medium text-danger mt-3" style="display: flex; align-items: center; gap: 8px; color: #EF4444; word-break: break-all;">
+                                <i data-lucide="alert-circle" style="width: 16px; height: 16px; min-width: 16px; stroke-width: 2.5px;"></i>
+                                <span>Upload failed: ${errMsg}</span>
+                            </div>
+                        `;
+                        lucide.createIcons();
+                    }
+                    clearBtn.style.display = 'block';
                 }
             } catch (err) {
-                alert("Network error occurred during file upload.");
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = origHtml;
-                lucide.createIcons();
+                if (statusDiv) {
+                    statusDiv.innerHTML = `
+                        <div class="flex items-center gap-2 text-sm font-medium text-danger mt-3" style="display: flex; align-items: center; gap: 8px; color: #EF4444;">
+                            <i data-lucide="alert-circle" style="width: 16px; height: 16px; min-width: 16px; stroke-width: 2.5px;"></i>
+                            <span>Network error during upload.</span>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                }
+                clearBtn.style.display = 'block';
             }
+        }
+        
+        clearBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.value = '';
+            selectedDisplay.style.display = 'none';
+            dropZone.style.display = 'flex';
+            if (statusDiv) statusDiv.style.display = 'none';
         });
     });
 

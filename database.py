@@ -5,9 +5,33 @@ from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, Text, Boolean, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
+# Try to load environment variables from a .env file manually to support local setup on other computers
+if os.path.exists(".env"):
+    try:
+        with open(".env", "r") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    key_val = line.split("=", 1)
+                    if len(key_val) == 2:
+                        k, v = key_val[0].strip(), key_val[1].strip()
+                        # Strip quotes if present
+                        if v.startswith('"') and v.endswith('"'):
+                            v = v[1:-1]
+                        elif v.startswith("'") and v.endswith("'"):
+                            v = v[1:-1]
+                        os.environ[k] = v
+    except Exception as e:
+        print(f"Warning: Failed to parse .env file manually: {e}")
+
 def compress_and_encode(data_bytes: bytes) -> str:
-    """Compress bytes using zlib and encode to base64 string."""
-    compressed = zlib.compress(data_bytes, level=9)
+    """Compress bytes using zlib and encode to base64 string.
+    Bypasses compression for ZIP/Excel files (which start with PK\\x03\\x04) to save CPU/time,
+    and uses fast compression (level 1) otherwise."""
+    if data_bytes.startswith(b"PK\x03\x04"):
+        compressed = zlib.compress(data_bytes, level=0)
+    else:
+        compressed = zlib.compress(data_bytes, level=1)
     return base64.b64encode(compressed).decode("utf-8")
 
 def decode_and_decompress(b64_str: str) -> bytes:
@@ -31,12 +55,18 @@ if DATABASE_URL:
         DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
     
     # Auto-rewrite direct Supabase IPv6 hosts to IPv4 connection pooler to prevent "Network is unreachable"
-    if "@db.iuvdyogawvuorvnzuaxc.supabase.co" in DATABASE_URL:
+    if "supabase.co" in DATABASE_URL or "pooler.supabase.com" in DATABASE_URL:
         # Swap direct hostname with the verified pooler hostname
-        DATABASE_URL = DATABASE_URL.replace("@db.iuvdyogawvuorvnzuaxc.supabase.co", "@aws-1-ap-northeast-1.pooler.supabase.com", 1)
-        # Swap port to transaction pooler port 6543
-        DATABASE_URL = DATABASE_URL.replace(":5432", ":6543", 1)
-        # Update username format for the pooler: postgres -> postgres.iuvdyogawvuorvnzuaxc
+        if "db.iuvdyogawvuorvnzuaxc.supabase.co" in DATABASE_URL:
+            DATABASE_URL = DATABASE_URL.replace("db.iuvdyogawvuorvnzuaxc.supabase.co", "aws-1-ap-northeast-1.pooler.supabase.com", 1)
+        
+        # Ensure we connect via port 6543 (transaction pooler) instead of 5432 (direct/IPv6-only)
+        if ":5432" in DATABASE_URL:
+            DATABASE_URL = DATABASE_URL.replace(":5432", ":6543", 1)
+        elif "pooler.supabase.com/postgres" in DATABASE_URL:
+            DATABASE_URL = DATABASE_URL.replace("pooler.supabase.com/postgres", "pooler.supabase.com:6543/postgres", 1)
+            
+        # Ensure username format contains project reference suffix for pooler validation
         if "postgresql://postgres:" in DATABASE_URL:
             DATABASE_URL = DATABASE_URL.replace("postgresql://postgres:", "postgresql://postgres.iuvdyogawvuorvnzuaxc:", 1)
 else:
