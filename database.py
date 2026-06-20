@@ -51,10 +51,27 @@ def decode_and_decompress(b64_str: str) -> bytes:
 
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()  # strip() removes any \n or spaces from env vars
 if DATABASE_URL:
+    # 1. Standardize scheme and auto-encode password if it contains special URL characters (like '@')
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
     
-    # Auto-rewrite direct Supabase IPv6 hosts to IPv4 connection pooler to prevent "Network is unreachable"
+    if DATABASE_URL.startswith("postgresql://"):
+        import urllib.parse
+        rest = DATABASE_URL[13:]
+        if '@' in rest:
+            parts = rest.rsplit('@', 1)
+            user_pass = parts[0]
+            host_db = parts[1]
+            if ':' in user_pass:
+                user_parts = user_pass.split(':', 1)
+                user = user_parts[0]
+                password = user_parts[1]
+                # Decode first to prevent double-encoding, then safely quote special characters
+                decoded_password = urllib.parse.unquote(password)
+                encoded_password = urllib.parse.quote(decoded_password)
+                DATABASE_URL = f"postgresql://{user}:{encoded_password}@{host_db}"
+    
+    # 2. Auto-rewrite direct Supabase IPv6 hosts to IPv4 connection pooler to prevent "Network is unreachable"
     if "supabase.co" in DATABASE_URL or "pooler.supabase.com" in DATABASE_URL:
         # Swap direct hostname with the verified pooler hostname
         if "db.iuvdyogawvuorvnzuaxc.supabase.co" in DATABASE_URL:
