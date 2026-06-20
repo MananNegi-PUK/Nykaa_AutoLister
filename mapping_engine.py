@@ -987,7 +987,13 @@ def generate_nykaa_template(db: Session, job: ProcessingJob, logger: EngineLogge
     # 5. Load Item Directory & Content Sheet
     logger.log("info", "Loading Item Directory...")
     item_bytes = decode_and_decompress(item_dir_file.content_b64)
-    item_df = pd.read_excel(io.BytesIO(item_bytes), sheet_name=0)
+    # Load only required columns to reduce memory footprint and prevent Railway OOM
+    item_cols = ['ITEM NAME', 'COLOR', 'Item Color', 'CATEGORY', 'SUB CATEGORY', 'SIZE', 'ITEM CODE', 'MRP', 'HS CODE', 'GENDER', 'MATERIAL', 'FABRIC', 'IMPORTED/DOMESTIC', 'Brand']
+    try:
+        item_df = pd.read_excel(io.BytesIO(item_bytes), sheet_name=0, usecols=item_cols)
+    except Exception:
+        # Fallback in case columns differ
+        item_df = pd.read_excel(io.BytesIO(item_bytes), sheet_name=0)
     logger.log("success", f"Loaded Item Directory: {len(item_df)} rows.")
 
     # 6. Load Content Sheet
@@ -995,8 +1001,17 @@ def generate_nykaa_template(db: Session, job: ProcessingJob, logger: EngineLogge
     content_bytes = decode_and_decompress(content_sheet_file.content_b64)
     content_xl = pd.ExcelFile(io.BytesIO(content_bytes))
     content_sheet_name = "MarketplaceD2C" if "MarketplaceD2C" in content_xl.sheet_names else content_xl.sheet_names[0]
-    content_df = pd.read_excel(io.BytesIO(content_bytes), sheet_name=content_sheet_name)
+    # Load only required columns to reduce memory footprint and prevent Railway OOM
+    content_cols = ['Item Name', 'SHADE NAME', 'Nykaa Title', 'Description', 'Product Image']
+    try:
+        content_df = pd.read_excel(io.BytesIO(content_bytes), sheet_name=content_sheet_name, usecols=content_cols)
+    except Exception:
+        content_df = pd.read_excel(io.BytesIO(content_bytes), sheet_name=content_sheet_name)
     logger.log("success", f"Loaded Content Sheet '{content_sheet_name}': {len(content_df)} rows.")
+    
+    # Run garbage collection to immediately reclaim memory
+    import gc
+    gc.collect()
 
     # 6. Parse input codes
     raw_codes = job.input_codes or ""

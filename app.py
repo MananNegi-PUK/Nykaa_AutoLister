@@ -79,12 +79,33 @@ class SSELogger:
             except Exception:
                 pass
 
+def cleanup_old_database_files(db: Session):
+    """Deletes previous versions of item_directory, content_sheet, and historical_listing
+    from the database to keep the storage footprint under the Supabase free-tier limits."""
+    try:
+        for ftype in ['item_directory', 'content_sheet', 'historical_listing']:
+            # Find the most recently uploaded file of this type
+            latest = db.query(DbFile).filter(DbFile.file_type == ftype).order_by(DbFile.uploaded_at.desc()).first()
+            if latest:
+                # Delete all other files of this type (excluding the latest)
+                deleted = db.query(DbFile).filter(DbFile.file_type == ftype, DbFile.id != latest.id).delete()
+                if deleted > 0:
+                    print(f"Cleaned up {deleted} old database records for type '{ftype}'.")
+        db.commit()
+    except Exception as e:
+        print(f"Error cleaning up database files: {e}")
+
 # Database Initialization on Startup
 @app.on_event("startup")
 def startup_event():
     try:
         init_db()
         print("Database tables initialized successfully.")
+        
+        # Run database file cleanup to purge any leftover historical records and free space on Supabase
+        db_conn = database.SessionLocal()
+        cleanup_old_database_files(db_conn)
+        db_conn.close()
     except Exception as db_err:
         print(f"DATABASE INITIALIZATION FAILED: {db_err}")
         print("FastAPI server will continue to boot to serve diagnostic connection errors.")
@@ -236,6 +257,9 @@ def upload_file(
         )
         db.add(db_file)
         db.commit()
+
+        # Run database file cleanup to keep only the latest version of master files (item_directory, content_sheet, historical_listing)
+        cleanup_old_database_files(db)
 
         # Run heavy auto-parsing and learning asynchronously in the background
         if file_type in ["category_template", "historical_listing"] and background_tasks:
