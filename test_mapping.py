@@ -169,5 +169,39 @@ class TestNykaaMapping(unittest.TestCase):
         self.assertIsNotNone(out_file)
         self.assertTrue(out_file.filename.startswith("Nykaa_Populated_"))
 
+    def test_03_prune_excel_file(self):
+        # 1. Test Content Sheet Pruning
+        content_path = "Raw Files/Content Sheet.xlsx"
+        self.assertTrue(os.path.exists(content_path))
+        with open(content_path, "rb") as f:
+            orig_bytes = f.read()
+        
+        pruned_bytes = database.prune_excel_file(orig_bytes, "content_sheet")
+        self.assertLess(len(pruned_bytes), len(orig_bytes))
+        
+        import io
+        import pandas as pd
+        df = pd.read_excel(io.BytesIO(pruned_bytes))
+        # Ensure only the 5 required columns are present
+        expected_cols = ['Item Name', 'SHADE NAME', 'Nykaa Title', 'Description', 'Product Image']
+        self.assertEqual(sorted(df.columns.tolist()), sorted(expected_cols))
+        
+        # 2. Test Item Directory Pruning
+        dir_path = "Raw Files/ITEM DIRECTORY Main.xlsx"
+        self.assertTrue(os.path.exists(dir_path))
+        with open(dir_path, "rb") as f:
+            orig_dir_bytes = f.read()
+            
+        pruned_dir_bytes = database.prune_excel_file(orig_dir_bytes, "item_directory")
+        self.assertLess(len(pruned_dir_bytes), len(orig_dir_bytes))
+        
+        df_dir = pd.read_excel(io.BytesIO(pruned_dir_bytes))
+        expected_dir_cols = [
+            'ITEM NAME', 'COLOR', 'Item Color', 'CATEGORY', 'SUB CATEGORY', 
+            'SIZE', 'ITEM CODE', 'MRP', 'HS CODE', 'GENDER', 'MATERIAL', 
+            'FABRIC', 'IMPORTED/DOMESTIC', 'Brand', 'LENGTH IN CM'
+        ]
+        self.assertEqual(sorted(df_dir.columns.tolist()), sorted(expected_dir_cols))
+
 if __name__ == '__main__':
     unittest.main()

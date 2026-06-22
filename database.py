@@ -49,6 +49,85 @@ def decode_and_decompress(b64_str: str) -> bytes:
             return b64_str.encode("utf-8")
         return b64_str
 
+def prune_excel_file(content_bytes: bytes, file_type: str) -> bytes:
+    """Prunes unused sheets and columns from item_directory and content_sheet Excel files
+    before saving to the database to minimize storage size and prevent Supabase connection timeouts."""
+    import pandas as pd
+    import io
+    
+    if file_type not in ['item_directory', 'content_sheet']:
+        return content_bytes
+        
+    try:
+        xl = pd.ExcelFile(io.BytesIO(content_bytes))
+        sheet_name = xl.sheet_names[0] # Default to first sheet
+        
+        if file_type == 'content_sheet':
+            if 'MarketplaceD2C' in xl.sheet_names:
+                sheet_name = 'MarketplaceD2C'
+                
+            df = pd.read_excel(io.BytesIO(content_bytes), sheet_name=sheet_name)
+            
+            # Map required columns case-insensitively
+            required_cols = ['Item Name', 'SHADE NAME', 'Nykaa Title', 'Description', 'Product Image']
+            col_mapping = {}
+            for col in df.columns:
+                col_lower = str(col).strip().lower()
+                for req in required_cols:
+                    if col_lower == req.lower():
+                        col_mapping[col] = req
+                        break
+                        
+            # Filter and rename columns
+            df_filtered = df[list(col_mapping.keys())].rename(columns=col_mapping)
+            
+            # Ensure all required columns are present (fill with empty if missing)
+            for req in required_cols:
+                if req not in df_filtered.columns:
+                    df_filtered[req] = ""
+                    
+            # Save to new Excel file in-memory
+            out_buf = io.BytesIO()
+            with pd.ExcelWriter(out_buf, engine='openpyxl') as writer:
+                df_filtered.to_excel(writer, sheet_name=sheet_name, index=False)
+            return out_buf.getvalue()
+            
+        elif file_type == 'item_directory':
+            df = pd.read_excel(io.BytesIO(content_bytes), sheet_name=sheet_name)
+            
+            # Map required columns case-insensitively
+            required_cols = [
+                'ITEM NAME', 'COLOR', 'Item Color', 'CATEGORY', 'SUB CATEGORY', 
+                'SIZE', 'ITEM CODE', 'MRP', 'HS CODE', 'GENDER', 'MATERIAL', 
+                'FABRIC', 'IMPORTED/DOMESTIC', 'Brand', 'LENGTH IN CM'
+            ]
+            col_mapping = {}
+            for col in df.columns:
+                col_lower = str(col).strip().lower()
+                for req in required_cols:
+                    if col_lower == req.lower():
+                        col_mapping[col] = req
+                        break
+                        
+            # Filter and rename columns
+            df_filtered = df[list(col_mapping.keys())].rename(columns=col_mapping)
+            
+            # Ensure all required columns are present (fill with empty if missing)
+            for req in required_cols:
+                if req not in df_filtered.columns:
+                    df_filtered[req] = ""
+                    
+            # Save to new Excel file in-memory
+            out_buf = io.BytesIO()
+            with pd.ExcelWriter(out_buf, engine='openpyxl') as writer:
+                df_filtered.to_excel(writer, sheet_name=sheet_name, index=False)
+            return out_buf.getvalue()
+            
+    except Exception as e:
+        print(f"Error pruning Excel file: {e}")
+        return content_bytes
+    return content_bytes
+
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()  # strip() removes any \n or spaces from env vars
 if DATABASE_URL:
     # 1. Standardize scheme and auto-encode password if it contains special URL characters (like '@')

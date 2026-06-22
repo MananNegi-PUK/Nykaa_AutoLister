@@ -988,7 +988,7 @@ def generate_nykaa_template(db: Session, job: ProcessingJob, logger: EngineLogge
     logger.log("info", "Loading Item Directory...")
     item_bytes = decode_and_decompress(item_dir_file.content_b64)
     # Load only required columns to reduce memory footprint and prevent Railway OOM
-    item_cols = ['ITEM NAME', 'COLOR', 'Item Color', 'CATEGORY', 'SUB CATEGORY', 'SIZE', 'ITEM CODE', 'MRP', 'HS CODE', 'GENDER', 'MATERIAL', 'FABRIC', 'IMPORTED/DOMESTIC', 'Brand']
+    item_cols = ['ITEM NAME', 'COLOR', 'Item Color', 'CATEGORY', 'SUB CATEGORY', 'SIZE', 'ITEM CODE', 'MRP', 'HS CODE', 'GENDER', 'MATERIAL', 'FABRIC', 'IMPORTED/DOMESTIC', 'Brand', 'LENGTH IN CM']
     try:
         item_df = pd.read_excel(io.BytesIO(item_bytes), sheet_name=0, usecols=item_cols)
     except Exception:

@@ -246,6 +246,15 @@ def upload_file(
 ):
     try:
         content_bytes = file.file.read()
+        
+        # Prune large inventory/content Excel sheets before encoding/storing to prevent DB limit issues
+        if file_type in ["item_directory", "content_sheet"]:
+            try:
+                from database import prune_excel_file
+                content_bytes = prune_excel_file(content_bytes, file_type)
+            except Exception as pe:
+                print(f"Error pruning uploaded file: {pe}")
+                
         content_b64 = database.compress_and_encode(content_bytes)
         
         # Save to database
